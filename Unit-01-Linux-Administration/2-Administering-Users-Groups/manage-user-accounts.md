@@ -80,5 +80,58 @@ sudo usermod -aG sudo testuser
 id testuser
 sudo userdel -r testuser
 ```
+## Lab Practice on users
+
+chandu@chandu-VirtualBox:~$ sudo adduser testuser
+info: Adding user `testuser' ...
+info: Selecting UID/GID from range 1000 to 59999 ...
+info: Adding new group `testuser' (1006) ...
+info: Adding new user `testuser' (1006) with group `testuser (1006)' ...
+info: Creating home directory `/home/testuser' ...
+info: Copying files from `/etc/skel' ...
+New password: 
+BAD PASSWORD: The password is shorter than 8 characters
+Retype new password: 
+passwd: password updated successfully
+Changing the user information for testuser
+Enter the new value, or press ENTER for the default
+	Full Name []: 
+	Room Number []: 
+	Work Phone []: 
+	Home Phone []: 
+	Other []: 
+Is the information correct? [Y/n] Y
+info: Adding new user `testuser' to supplemental / extra groups `users' ...
+info: Adding user `testuser' to group `users' ...
+chandu@chandu-VirtualBox:~$ id testuer
+id: ‘testuer’: no such user
+chandu@chandu-VirtualBox:~$ id testuser
+uid=1006(testuser) gid=1006(testuser) groups=1006(testuser),100(users)
+chandu@chandu-VirtualBox:~$ ls /home
+alice  bob  chandu  eve  testuser
+chandu@chandu-VirtualBox:~$ sudo userdel -r testuser
+userdel: testuser mail spool (/var/mail/testuser) not found
+chandu@chandu-VirtualBox:~$ id testuser
+id: ‘testuser’: no such user
+
+## Step 1 - Create a test user
+
+sudo adduser testuser and set passwd "Test123"
+
+## Step 2 - Verify the user exists
+
+id testuser
+
+## Step 3 - Check the new home dir
+
+ls /home
+
+## Step 4 - Delete the testuser and its home dir
+
+sudo userdel -r testuser
+
+## Step 5 - Verify it's gone
+
+id testuser
 
 **Objective:** Learn to create, modify, inspect, and delete Linux users and groups.
