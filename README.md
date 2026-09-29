@@ -26,6 +26,17 @@ environments.
 - Linux Security
 - Troubleshooting
 
+## Course Progress
+
+| Unit | Topic | Status |
+|------|-------|--------|
+| Unit I | Linux Administration | Completed |
+| Unit II | Permissions and File Management | In Progress |
+| Unit III | Software and Storage | Planned |
+| Unit IV | System Administration and Networks | Planned |
+| Unit V | Linux Security and Scripting | Planned |
+| Unit VI | IaC and Containers | Planned |
+
 ## Environment
 
 - OS: Ubuntu Linux
@@ -43,4 +54,5 @@ of my practical learning journey.
 ## Author
 
 Sandrani Balachandu
+
 GitHub: Balachandu86
