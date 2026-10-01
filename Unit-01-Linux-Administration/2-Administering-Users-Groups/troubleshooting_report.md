@@ -24,24 +24,24 @@
 
 ### Path & Permissions Breakdown
 
-| 
+| **Object** | **Permissions** | **Owner** | **Group** | **Status** |
+|---|---|---|---|---|
+| `/home/alice` | `drwxr-x---` (750) | `alice` | `alice` | **Blocking Point** — Bob is treated as `others` → `---` |
+| `/home/alice/project` | `drwxrwxr-x` (775) | `alice` | `alice` | Traversal permitted for others (`r-x`) |
+| `project.txt` | `-rw-rw-r--` (664) | `alice` | `developers` | Access permitted for `developers` (`rw-`) |
 
-| **Object** | **Permissions** | **Owner** | **Group** | **Status** | 
-| `/home/alice` | `drwxr-x---` (750) | `alice` | `alice` | **Blocking Point** (Bob treated as "others" $\to$ `---`) | 
-| `/home/alice/project` | `drwxrwxr-x` (775) | `alice` | `alice` | Traversal permitted for others (`r-x`) | 
-| `project.txt` | `-rw-rw-r--` (664) | `alice` | `developers` | Access permitted for `developers` (`rw-`) | 
+### 3. Diagnostic Investigation & Hypothesis Testing
 
-## 3. Diagnostic Investigation & Hypothesis Testing
-
-| **#** | **Hypothesis Tested** | **Diagnostic Command** | **Result** | **Finding** | 
-| 1 | Operator identity unknown | `whoami` | `chandu` | Logged-in session established | 
-| 2 | Bob does not exist | `id bob` | UID `1002`, groups `users`, `developers` | **Eliminated** | 
-| 3 | Bob not in `developers` group | `groups bob` | `bob users developers` | **Eliminated** | 
-| 4 | Group database mismatch | `getent group developers` | `developers:x:1004:alice,bob` | **Eliminated** | 
-| 5 | Error reproducibility | `ls -l /home/alice/project/project.txt` | `Permission denied` | **Confirmed reproducible** | 
-| 6 | File existence / sudo check | `sudo ls -l .../project.txt` | Success (`-rw-rw-r-- ... developers`) | File exists; elevated bypass succeeds | 
-| 7 | Subdirectory blocks traversal | `sudo ls -ld /home/alice/project` | `drwxrwxr-x` | **Eliminated** (Others have `r-x`) | 
-| 8 | Parent directory blocks traversal | `ls -ld /home/alice` | `drwxr-x--- alice alice` | **CONFIRMED ROOT CAUSE** | 
+| **#** | **Hypothesis Tested** | **Diagnostic Command** | **Result** | **Finding** |
+|---:|---|---|---|---|
+| 1 | Operator identity unknown | `whoami` | `chandu` | Logged-in session established |
+| 2 | Bob does not exist | `id bob` | UID `1002`, groups `users`, `developers` | **Eliminated** |
+| 3 | Bob not in `developers` group | `groups bob` | `bob users developers` | **Eliminated** |
+| 4 | Group database mismatch | `getent group developers` | `developers:x:1004:alice,bob` | **Eliminated** |
+| 5 | Error reproducibility | `ls -l /home/alice/project/project.txt` | `Permission denied` | **Confirmed reproducible** |
+| 6 | File existence / sudo check | `sudo ls -l /home/alice/project/project.txt` | Success — `-rw-rw-r-- ... developers` | File exists; elevated access succeeds |
+| 7 | Subdirectory blocks traversal | `sudo ls -ld /home/alice/project` | `drwxrwxr-x` | **Eliminated** — others have `r-x` |
+| 8 | Parent directory blocks traversal | `ls -ld /home/alice` | `drwxr-x--- alice alice` | **CONFIRMED ROOT CAUSE** |
 
 ## 4. Technical Mechanism (Root Cause)
 
