@@ -1,270 +1,753 @@
-1. What is SUID?
+# Linux Special Permissions
 
-SUID = Set User ID
+Linux provides three special permissions:
 
-Normally, when you execute a program:
+| Permission | Purpose |
+|---|---|
+| **SUID** | File owner's effective privileges |
+| **SGID** | File group's effective privileges / directory group inheritance |
+| **Sticky Bit** | Controls deletion in shared directories |
 
-Your user
-   ↓
-Program
-   ↓
-Runs with your privileges
+---
 
-With SUID:
+# 1. SUID
 
-Your user
-   ↓
-SUID program
-   ↓
-Runs with the file owner's effective privileges
+## What is SUID?
 
-So if a program is:
+**SUID = Set User ID**
 
+Normally, a program runs with the privileges of the user executing it.
+
+With SUID enabled, the program runs with the **file owner's effective UID**.
+
+```text
+Normal:
+
+User → Program → User privileges
+
+SUID:
+
+User → SUID Program → File owner's effective privileges
+```
+
+If the file is:
+
+```text
 Owner = root
-SUID  = enabled
+SUID = enabled
+```
 
-a normal user executing that program can have the program run with root's effective UID.
+a normal user can execute the program with **root's effective privileges**.
 
-This is why SUID is important in cybersecurity.
+> SUID does not make the user root. Only the SUID program runs with the owner's effective privileges.
 
-For example, traditionally:
+---
 
-/usr/bin/passwd
-Owner: root
-SUID: enabled
+## How to Identify SUID
 
-A normal user can run:
+Normal permissions:
 
-passwd
-
-and modify their password, even though the underlying password database is protected from ordinary users.
-
-Security perspective
-
-The important point is:
-
-The user does not become root. The SUID program temporarily executes with the owner's effective privileges.
-
-
-
-2. How do we recognize SUID?
-
-Normally:
-
+```text
 -rwxr-xr-x
+```
 
-With SUID:
+SUID enabled:
 
+```text
 -rwsr-xr-x
+```
 
-Notice:
+The owner's `x` changes to `s`.
 
-rwx
- ↓
-rws
+### Numeric value
 
-The x position for the owner becomes s.
-
-You can also express SUID numerically.
-
+```text
 4 = SUID
 2 = SGID
 1 = Sticky Bit
+```
 
-So:
+Example:
 
+```bash
 chmod 4755 file
+```
 
-means:
+Means:
 
+```text
 SUID + 755
+```
 
+---
 
-3. A real Linux example
-Ubuntu has programs that legitimately use SUID.
-Let's inspect one:
+## Real Example: `/usr/bin/passwd`
+
+Check:
+
+```bash
 ls -l /usr/bin/passwd
+```
 
-You will likely see something similar to:
+Typical output:
+
+```text
 -rwsr-xr-x 1 root root ... /usr/bin/passwd
+```
 
-The important part is:
-root
- ↓
-owner
+Here:
 
-s
- ↓
-SUID
+```text
+root → file owner
+s    → SUID enabled
+```
 
-Why would passwd need special privileges?
-A normal user needs to be able to change their password, but password information is protected by privileged system files. The SUID mechanism allows the program to perform the privileged operation while the user remains a normal user.
-4. Very important distinction
-SUID does not mean:
-"The user becomes root."
+SUID allows normal users to perform password related operations that require privileged access.
 
-It means:
-The SUID executable runs with the file owner's effective privileges.
+---
 
-For example:
-Owner = root
-SUID  = enabled
+# 🧪 Practical Lab: SUID
 
-can result in:
-User: bob
+## Step 1: Create a safe SUID example
 
-       ↓
+Copy `id`:
 
-SUID program
-
-       ↓
-
-Effective UID: root
-
-But Bob's normal shell is still Bob.
-
-
-🧪 Practical Lab: See SUID in Action
-We're going to create a safe SUID demonstration using /usr/bin/id.
-We will make a copy owned by alice, not root, so we're not creating a root privilege escalation path.
-Step 1
-As chandu, run:
+```bash
 cp /usr/bin/id /tmp/id-alice
+```
 
-Then:
+Change ownership:
+
+```bash
 sudo chown alice:alice /tmp/id-alice
+```
 
 Check:
+
+```bash
 ls -l /tmp/id-alice
+```
 
-You should see something like:
--rwxr-xr-x 1 alice alice ... /tmp/id-alice
+Expected:
 
-Step 2: Enable SUID
-Run:
+```text
+-rwxr-xr-x 1 alice alice ...
+```
+
+---
+
+## Step 2: Enable SUID
+
+```bash
 sudo chmod u+s /tmp/id-alice
+```
 
 Check:
+
+```bash
 ls -l /tmp/id-alice
+```
 
-Now you should see:
--rwsr-xr-x 1 alice alice ... /tmp/id-alice
+Expected:
 
-The important change is:
-x
-↓
-s
-
-Step 3: Test as Bob
-Switch to Bob:
-su - bob
-
-Run the normal command:
-id
-
-Then run:
-/tmp/id-alice
-
-The two outputs should show the difference between Bob's normal identity and the SUID program's effective identity.
-Then return:
-exit
-
-🧠 What this lab demonstrates
-Without SUID:
-Bob
- ↓
-id
- ↓
-Bob's privileges
-
-With SUID:
-Bob
- ↓
-/tmp/id-alice
- ↓
-Alice's effective privileges
-
-So the owner of the executable matters.
-That's the core idea of SUID.
-Security relevance
-An administrator can search for SUID executables with:
-find / -perm -4000 -type f 2>/dev/null
-
-This finds regular files with the SUID bit set.
-In security assessments, unusual or unnecessarily privileged SUID programs can deserve investigation because a vulnerable or improperly configured SUID program may allow privilege escalation.
-
-
-
-
-
-SUID owned by root
-Remember our previous example:
+```text
 -rwsr-xr-x 1 alice alice ...
+```
 
-Chandu executed it and got:
-uid=1000(chandu) euid=1001(alice)
+The important change:
 
-Now imagine the same thing is owned by root:
--rwsr-xr-x 1 root root ...
+```text
+x → s
+```
+
+---
+
+## Step 3: Test as Bob
+
+Switch user:
+
+```bash
+su - bob
+```
+
+Run:
+
+```bash
+id
+```
 
 Then:
-Normal user
-    ↓
-Root owned SUID program
-    ↓
-Effective UID = 0
-    ↓
-root privileges
 
-The user does not become root as a shell user. The SUID program executes with root's effective privileges.
-Real Linux example
-Check:
-ls -l /usr/bin/passwd
+```bash
+/tmp/id-alice
+```
 
-On a typical Ubuntu installation, you'll see an s in the owner's execute position, something like:
--rwsr-xr-x 1 root root ... /usr/bin/passwd
+The normal `id` command shows Bob's identity.
 
-That SUID bit is intentional. It allows ordinary users to perform password related operations that require access beyond their normal permissions.
+The SUID program uses Alice as its **effective UID**.
 
-🧪 Let's demonstrate it safely
-We'll use the same harmless id program we used before.
-As chandu:
+Return:
+
+```bash
+exit
+```
+
+### Key idea
+
+```text
+Bob
+ ↓
+SUID program
+ ↓
+Effective UID = Alice
+```
+
+---
+
+# SUID Security
+
+Find SUID files:
+
+```bash
+find / -perm -4000 -type f 2>/dev/null
+```
+
+Security teams investigate unusual SUID programs because a vulnerable or incorrectly configured SUID program can potentially lead to **privilege escalation**.
+
+The important question is:
+
+> Is the SUID program necessary, trusted and securely configured?
+
+---
+
+# 2. Root Owned SUID
+
+A root owned SUID executable looks like:
+
+```text
+-rwsr-xr-x 1 root root ...
+```
+
+A normal user executing it can get:
+
+```text
+uid  = normal user
+euid = 0 (root)
+```
+
+Example:
+
+```bash
 sudo cp /usr/bin/id /tmp/id-root
 sudo chown root:root /tmp/id-root
 sudo chmod 4755 /tmp/id-root
+```
 
 Check:
+
+```bash
 ls -l /tmp/id-root
+```
 
-You should get:
--rwsr-xr-x 1 root root ... /tmp/id-root
+Run:
 
-Now run:
+```bash
 /tmp/id-root
+```
 
-You should see the important difference:
+Important output:
+
+```text
 uid=1000(chandu) ... euid=0(root)
+```
 
-So:
-uid  → 1000 → chandu
-euid → 0    → root
+Meaning:
 
-That is root owned SUID.
-Why is this dangerous?
-Because the program is running with root's effective privileges.
-If that program contains a security vulnerability, an attacker may be able to make the program perform unintended actions with those root privileges.
-That's why security administrators often audit SUID files:
-find / -perm -4000 -type f 2>/dev/null
+```text
+UID  → Actual user
+EUID → Effective privilege used by the program
+```
 
-The important security question isn't:
-"Is SUID present?"
+> A root owned SUID program is security sensitive because vulnerabilities in it may allow unintended actions with root privileges.
 
-It is:
-"Is this SUID program necessary, trusted, and securely configured?"
+---
 
-Clean up our lab
-After testing:
+## Clean Up
+
+```bash
 sudo rm /tmp/id-root
 sudo rm /tmp/id-alice
+```
 
+---
 
+# 3. SGID
+
+## What is SGID?
+
+**SGID = Set Group ID**
+
+The easiest way to remember:
+
+```text
+SUID → User / Owner
+SGID → Group
+```
+
+For an executable, SGID makes the program run with the **effective group ID of the file's owning group**.
+
+---
+
+## SGID on Executables
+
+Normal:
+
+```text
+-rwxr-xr-x
+```
+
+SGID:
+
+```text
+-rwxr-sr-x
+```
+
+The `s` appears in the **group execute position**.
+
+Example:
+
+```text
+Owner = alice
+Group = developers
+SGID  = enabled
+```
+
+A user running the program gets:
+
+```text
+Effective group = developers
+```
+
+The user does **not** become Alice.
+
+---
+
+# SGID on Directories
+
+SGID is especially useful on shared directories.
+
+When SGID is enabled on a directory:
+
+> New files and directories inherit the directory's group ownership.
+
+Example:
+
+```text
+/project
+Group = developers
+SGID = enabled
+```
+
+If Alice creates:
+
+```text
+code.txt
+```
+
+and Bob creates:
+
+```text
+test.txt
+```
+
+both can inherit:
+
+```text
+Group = developers
+```
+
+This is useful for team collaboration.
+
+---
+
+# 🧪 Practical Lab: SGID Directory
+
+## Step 1: Create directory
+
+```bash
+sudo mkdir /tmp/dev-share
+```
+
+Set group:
+
+```bash
+sudo chgrp developers /tmp/dev-share
+```
+
+Give owner and group access:
+
+```bash
+sudo chmod 770 /tmp/dev-share
+```
+
+Enable SGID:
+
+```bash
+sudo chmod g+s /tmp/dev-share
+```
+
+Check:
+
+```bash
+ls -ld /tmp/dev-share
+```
+
+Expected:
+
+```text
+drwxrws--- 2 chandu developers ...
+```
+
+The `s` indicates SGID.
+
+---
+
+## Step 2: Test with Alice
+
+```bash
+su - alice
+```
+
+Create a file:
+
+```bash
+touch /tmp/dev-share/alice.txt
+```
+
+Check:
+
+```bash
+ls -l /tmp/dev-share/alice.txt
+```
+
+Expected group:
+
+```text
+alice developers alice.txt
+```
+
+Even if Alice's primary group is `alice`, the file inherits:
+
+```text
+developers
+```
+
+Return:
+
+```bash
+exit
+```
+
+---
+
+## Step 3: Test with Bob
+
+```bash
+su - bob
+```
+
+Create:
+
+```bash
+touch /tmp/dev-share/bob.txt
+```
+
+Check:
+
+```bash
+ls -l /tmp/dev-share/bob.txt
+```
+
+The group should again be:
+
+```text
+developers
+```
+
+---
+
+# SUID vs SGID
+
+| Permission | Effect |
+|---|---|
+| **SUID** | Executable uses file owner's effective UID |
+| **SGID on executable** | Executable uses file group's effective GID |
+| **SGID on directory** | New files inherit directory's group |
+
+Remember:
+
+```text
+SUID → Owner identity
+SGID → Group identity
+```
+
+---
+
+# 4. Sticky Bit
+
+The easiest way to remember:
+
+```text
+SUID        → Owner privilege
+SGID        → Group privilege / inheritance
+Sticky Bit  → Controls deletion
+```
+
+The Sticky Bit is commonly used on:
+
+```text
+/tmp
+```
+
+Check:
+
+```bash
+ls -ld /tmp
+```
+
+Typical output:
+
+```text
+drwxrwxrwt
+```
+
+The final `t` means Sticky Bit is enabled.
+
+---
+
+## What does Sticky Bit do?
+
+Consider a shared directory:
+
+```text
+drwxrwxrwx shared/
+```
+
+Everyone can write to it.
+
+Without Sticky Bit:
+
+```text
+Alice creates alice.txt
+Bob may delete alice.txt
+```
+
+With Sticky Bit:
+
+```text
+drwxrwxrwt shared/
+```
+
+Users can generally delete or rename only files they own.
+
+Example:
+
+```text
+Alice → creates alice.txt
+Bob   → creates bob.txt
+
+Bob   → delete bob.txt     ✅
+Bob   → delete alice.txt   ❌
+Alice → delete alice.txt   ✅
+```
+
+This is why `/tmp` uses the Sticky Bit.
+
+---
+
+# 🧪 Practical Lab: Sticky Bit
+
+## Step 1: Create directory
+
+```bash
+sudo mkdir /tmp/sticky-lab
+```
+
+Give everyone access:
+
+```bash
+sudo chmod 777 /tmp/sticky-lab
+```
+
+Check:
+
+```bash
+ls -ld /tmp/sticky-lab
+```
+
+Expected:
+
+```text
+drwxrwxrwx
+```
+
+---
+
+## Step 2: Enable Sticky Bit
+
+```bash
+sudo chmod +t /tmp/sticky-lab
+```
+
+Check:
+
+```bash
+ls -ld /tmp/sticky-lab
+```
+
+Expected:
+
+```text
+drwxrwxrwt
+```
+
+The final `t` indicates Sticky Bit.
+
+---
+
+## Step 3: Test with Alice
+
+```bash
+su - alice
+```
+
+Create:
+
+```bash
+touch /tmp/sticky-lab/alice.txt
+```
+
+Check:
+
+```bash
+ls -l /tmp/sticky-lab
+```
+
+Return:
+
+```bash
+exit
+```
+
+---
+
+## Step 4: Test with Bob
+
+```bash
+su - bob
+```
+
+Check:
+
+```bash
+ls -l /tmp/sticky-lab
+```
+
+Bob can see Alice's file.
+
+Try deleting it:
+
+```bash
+rm /tmp/sticky-lab/alice.txt
+```
+
+Expected:
+
+```text
+Operation not permitted
+```
+
+Why?
+
+Because Bob does not own `alice.txt`, and the Sticky Bit protects the directory entries.
+
+---
+
+# Quick Revision
+
+```text
+SUID
+ ↓
+File owner's effective UID
+
+SGID
+ ↓
+File group's effective GID
+or
+Directory group inheritance
+
+Sticky Bit
+ ↓
+Controls deletion in shared directories
+```
+
+### Permission Symbols
+
+```text
+SUID       → s in owner execute position
+SGID       → s in group execute position
+Sticky Bit → t in others execute position
+```
+
+### Numeric Values
+
+```text
+SUID        = 4
+SGID        = 2
+Sticky Bit  = 1
+```
+
+Example:
+
+```bash
+chmod 4755 file
+```
+
+```text
+4 → SUID
+755 → normal permissions
+```
+
+---
+
+# Security Perspective
+
+Special permissions are not automatically dangerous.
+
+The key security questions are:
+
+1. **Who owns the file?**
+2. **Which special permission is enabled?**
+3. **Is the permission necessary?**
+4. **Is the program trusted and secure?**
+5. **Could a vulnerability allow privilege escalation?**
+
+Useful commands:
+
+```bash
+ls -l file
+```
+
+```bash
+ls -ld directory
+```
+
+```bash
+find / -perm -4000 -type f 2>/dev/null
+```
+
+```bash
+find / -perm -2000 -type f 2>/dev/null
+```
+
+These concepts are important when auditing Linux systems for **privilege escalation and incorrect permissions**.
