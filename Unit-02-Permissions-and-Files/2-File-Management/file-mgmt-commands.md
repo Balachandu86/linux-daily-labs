@@ -74,7 +74,4 @@ Notice that we're using rmdir here because dir1 should now be empty.
 Core commands to remember
 mkdir → create directory
 touch → create file
-cp    → copy
-mv    → move / rename
-rm    → remove
-rmdir → remove empty directory
+
