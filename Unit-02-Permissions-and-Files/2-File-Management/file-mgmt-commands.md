@@ -1,295 +1,383 @@
-1. mkdir — Create directories
-Concept
-mkdir creates a directory.
-mkdir dirname
+from pathlib import Path
 
-Example:
+markdown = r'''# Linux File Management and Command-Line Essentials
+
+## 1. File and Directory Management
+
+### `mkdir` — Create directories
+
+```bash
 mkdir /tmp/file-lab
-
-Verify:
 ls -ld /tmp/file-lab
+```
 
-Useful option
+Create nested directories, including missing parents:
+
+```bash
 mkdir -p /tmp/file-lab/a/b/c
+```
 
--p creates the parent directories if they don't already exist.
-2. touch — Create an empty file
+### `touch` — Create an empty file
+
+```bash
 touch /tmp/file-lab/test.txt
-
-Verify:
 ls -l /tmp/file-lab/test.txt
+```
 
-Important: touch can also update a file's timestamps if the file already exists.
-3. cp — Copy
-Copy a file:
+**Note:** If the file already exists, `touch` updates its timestamps.
+
+### `cp` — Copy files and directories
+
+```bash
 cp /tmp/file-lab/test.txt /tmp/file-lab/test-copy.txt
-
-Copy a directory:
 cp -r /tmp/file-lab /tmp/file-lab-backup
+```
 
--r means recursive, so directories and their contents are copied.
-4. mv — Move or rename
-Rename:
+`-r` copies a directory and its contents recursively.
+
+### `mv` — Move or rename
+
+```bash
 mv /tmp/file-lab/test.txt /tmp/file-lab/renamed.txt
-
-Move:
 mv /tmp/file-lab/renamed.txt /tmp/
+```
 
-Same command, two common uses:
-mv → rename
-mv → move
+Use `mv` to rename or move files and directories.
 
-5. rm — Remove
-Remove a file:
+### `rm` and `rmdir` — Remove files and directories
+
+```bash
 rm /tmp/test.txt
-
-Remove a directory and its contents:
 rm -r /tmp/file-lab
-
-Force removal:
 rm -f filename
-
-Recursive + force:
 rm -rf directory
+rmdir empty-directory
+```
 
-⚠️ rm -rf is powerful because Linux normally does not provide a recycle bin for this command.
-Practical Lab
-Let's do everything in one controlled directory:
+- `rm` removes files.
+- `rm -r` removes a directory and its contents.
+- `rm -f` forces removal without prompting.
+- `rm -rf` combines recursive and force removal.
+- `rmdir` removes an empty directory only.
+
+> **Caution:** `rm -rf` can permanently delete data. Check the path before running it.
+
+### 🧪 Practical Lab: Basic File Operations
+
+Run the commands in a test directory:
+
+```bash
 mkdir /tmp/file-lab
 cd /tmp/file-lab
 
-Then:
 touch file1.txt
 mkdir dir1
 cp file1.txt file2.txt
 mv file2.txt dir1/
+
 ls -l
 ls -l dir1/
+```
 
-Finally:
+Expected: `file1.txt` is in the current directory and `file2.txt` is inside `dir1/`.
+
+Clean up:
+
+```bash
 rm dir1/file2.txt
 rmdir dir1
+```
 
-Notice that we're using rmdir here because dir1 should now be empty.
-Core commands to remember
-mkdir → create directory
-touch → create file
-cp    → copy
-mv    → move / rename
-rm    → remove
-rmdir → remove empty directory
+`rmdir` works because `dir1` is now empty.
 
+---
 
-1. tree
-Shows directories and files in a tree structure.
-tree /tmp/file-lab
+## 2. Navigation and Directory Structure
 
-If not installed:
-sudo apt install tree
+### `pwd` — Show current directory
 
-Useful:
-tree -L 2
-
--L 2 limits the display to two levels.
-2. pwd
-Shows your current working directory.
+```bash
 pwd
+```
 
-Example:
+Example output:
+
+```text
 /home/chandu
+```
 
-Remember:
-pwd = Print Working Directory
+### `tree` — Display directory structure
 
-3. less and more
-Used to read large files without dumping everything onto the terminal.
+```bash
+tree /tmp/file-lab
+tree -L 2 /tmp/file-lab
+```
+
+`-L 2` limits the display to two directory levels.
+
+If `tree` is not installed:
+
+```bash
+sudo apt install tree
+```
+
+---
+
+## 3. Reading Files
+
+### `less` and `more` — Read files page by page
+
+```bash
 less /var/log/syslog
-
-Useful less navigation:
-Space → next page
-b     → previous page
-↑/↓   → move
-/word → search
-q     → quit
-
-more:
 more /var/log/syslog
+```
 
-Difference
-less → more capable, commonly preferred
-more → simpler pager
+`less` provides more navigation features and is commonly preferred.
 
-4. head
-Shows the beginning of a file.
+Useful `less` keys:
+
+| Key | Action |
+|---|---|
+| `Space` | Next page |
+| `b` | Previous page |
+| `↑` / `↓` | Move through lines |
+| `/word` | Search for `word` |
+| `q` | Quit |
+
+### `head` — Show the beginning
+
+```bash
 head file.txt
-
-Default is usually 10 lines.
--n
 head -n 5 file.txt
-
-Shows the first 5 lines.
-You can also use:
 head -n 20 file.txt
+```
 
-5. tail
-Shows the end of a file.
+By default, `head` displays the first 10 lines.
+
+### `tail` — Show the end
+
+```bash
 tail file.txt
-
-Default is usually 10 lines.
--n
 tail -n 5 file.txt
+```
 
-Shows the last 5 lines.
-Very important for cybersecurity/SOC work:
+By default, `tail` displays the last 10 lines.
+
+Follow new log entries in real time:
+
+```bash
 tail -f /var/log/syslog
+```
 
--f follows the file and displays new lines as they are added.
-6. grep
-One of the most important commands for Linux administration and SOC work.
-It searches text for a pattern.
-Example:
+`-f` keeps watching the file as new lines are added. Press `Ctrl+C` to stop.
+
+---
+
+## 4. `grep` — Search Text
+
+`grep` searches files for lines matching a pattern.
+
+```bash
 grep "error" logfile.txt
+```
 
-Important options
-grep -i "error" logfile.txt
+### Useful options
 
--i → case insensitive
-grep -n "error" logfile.txt
+| Command | Purpose |
+|---|---|
+| `grep -i "error" file` | Case-insensitive search |
+| `grep -n "error" file` | Show matching line numbers |
+| `grep -v "error" file` | Show lines that do not match |
+| `grep -r "password" /etc/` | Search recursively |
+| `grep -w "root" file` | Match the whole word |
+| `grep -c "error" file` | Count matching lines |
+| `grep -in "error" file` | Ignore case and show line numbers |
 
--n → show line numbers
-grep -v "error" logfile.txt
+### 🧪 Practical Lab: Find Authentication Failures
 
--v → show lines that do not match
-grep -r "password" /etc/
-
--r → recursively search directories
-grep -w "root" file.txt
-
--w → match the whole word
-grep -c "error" logfile.txt
-
--c → count matching lines
-Combine options:
-grep -in "error" logfile.txt
-
-Very common combination
+```bash
 grep -i "failed" /var/log/auth.log
+```
 
-This is directly useful when investigating authentication failures.
-7. Redirection
-Linux commands have three standard streams:
-stdin   → 0 → input
-stdout  → 1 → normal output
-stderr  → 2 → error output
+This searches for authentication failure messages without case sensitivity. The log path and available entries depend on the Linux distribution and system configuration.
 
-Think:
-stdin  → command
-stdout ← command
-stderr ← command
+---
 
-> stdout redirection
+## 5. Redirection
+
+Linux commands use three standard streams:
+
+| Stream | Number | Purpose |
+|---|---:|---|
+| Standard input (`stdin`) | `0` | Input to a command |
+| Standard output (`stdout`) | `1` | Normal command output |
+| Standard error (`stderr`) | `2` | Error messages |
+
+### Redirect output
+
+```bash
 ls > output.txt
+```
 
-Instead of displaying the output, it goes into output.txt.
-Overwrites the file.
->>
+Writes standard output to a file, **overwriting** its previous contents.
+
+```bash
 ls >> output.txt
+```
 
-Appends to the file.
-< stdin
+Appends standard output to the file.
+
+### Redirect input
+
+```bash
 sort < names.txt
+```
 
-The contents of names.txt become the command's input.
-2> stderr
+Uses `names.txt` as the command's input.
+
+### Redirect errors
+
+```bash
 ls /does-not-exist 2> error.txt
+```
 
-Errors go into error.txt.
-Combine stdout and stderr
+Sends error messages to `error.txt`.
+
+### Redirect both output streams
+
+```bash
 command > output.txt 2> error.txt
-
-Or:
 command > all.txt 2>&1
+```
 
-Meaning:
-stdout → all.txt
-stderr → same place
+The second command sends both standard output and standard error to `all.txt`.
 
-8. Command chaining
-;
-Run the next command regardless of whether the previous one succeeds.
+---
+
+## 6. Command Chaining and Pipes
+
+### `;` — Run the next command regardless of success
+
+```bash
 mkdir test; echo "Done"
+```
 
-&&
-Run the second command only if the first succeeds.
+The second command runs even if the first command fails.
+
+### `&&` — Run only if the previous command succeeds
+
+```bash
 mkdir test && echo "Created"
+```
 
-Very commonly used.
-||
-Run the second command only if the first fails.
+### `||` — Run only if the previous command fails
+
+```bash
 mkdir test || echo "Failed"
+```
 
-| Pipe
-Pass stdout of one command as stdin to another.
+### `|` — Pipe output into another command
+
+```bash
 ls /etc | grep ssh
-
-Think:
-ls /etc
-   ↓
- grep ssh
-
-This is extremely important in Linux.
-Example:
 ps aux | grep nginx
+```
 
-!
-Negates the exit status of a command.
+A pipe sends the first command's standard output to the next command's standard input.
+
+### `!` — Negate the exit status
+
+```bash
 ! grep "root" file.txt
+```
 
-Conceptually:
-command succeeds → ! makes result fail
-command fails     → ! makes result succeed
+`!` reverses the command's exit status:
 
-9. xargs
-xargs takes input from stdin and turns it into arguments for another command.
-Simple example:
+- Exit status `0` (success) becomes nonzero (failure).
+- Nonzero exit status (failure) becomes `0` (success).
+
+It does **not** reverse or hide the command's displayed output.
+
+---
+
+## 7. `xargs` — Convert Input into Arguments
+
+`xargs` reads items from standard input and passes them as arguments to another command.
+
+### Example
+
+```bash
 echo "file1.txt file2.txt" | xargs ls -l
+```
 
-Conceptually:
-echo
- ↓
-file1.txt file2.txt
- ↓
-xargs
- ↓
+Conceptually, this runs:
+
+```bash
 ls -l file1.txt file2.txt
+```
 
-Practical example
+### 🧪 Practical Lab
+
+List `.txt` files found under a directory:
+
+```bash
 find /tmp/file-lab -name "*.txt" | xargs ls -l
+```
 
-Finds .txt files and passes them to ls.
-Another useful example:
+Run one command per input item:
+
+```bash
 printf "one\ntwo\nthree\n" | xargs -n 1 echo
+```
 
--n 1 means one input item per command invocation.
-Important caution
-With filenames containing spaces or special characters, plain xargs can behave incorrectly. A safer pattern with find is:
+Expected output:
+
+```text
+one
+two
+three
+```
+
+### Safer handling of filenames
+
+Plain `xargs` can mishandle filenames containing spaces or special characters. Use null-delimited input with `find`:
+
+```bash
 find . -name "*.txt" -print0 | xargs -0 ls -l
+```
 
-You don't need to memorize the advanced form yet. Just understand why -0 exists.
-What you should remember for interviews
-tree       → directory structure
-pwd        → current directory
-less/more  → read files page by page
-head       → beginning of file
-tail       → end of file
-grep       → search text
->          → overwrite stdout
->>         → append stdout
-<          → stdin
-2>         → stderr
-|          → pipe output to another command
-;          → run regardless
-&&         → run if success
-||         → run if failure
-!          → negate exit status
-xargs      → stdin → command arguments
+`-print0` and `-0` preserve filenames containing spaces and other characters that would otherwise be treated as separators.
+
+---
+
+## Quick Revision
+
+| Command / Operator | Purpose |
+|---|---|
+| `mkdir` | Create directories |
+| `touch` | Create files or update timestamps |
+| `cp` | Copy files/directories |
+| `mv` | Move or rename |
+| `rm` / `rmdir` | Remove files / empty directories |
+| `pwd` | Show current directory |
+| `tree` | Display directory structure |
+| `less` / `more` | Read files page by page |
+| `head` / `tail` | Show beginning / end of a file |
+| `tail -f` | Follow new log entries |
+| `grep` | Search text |
+| `>` / `>>` | Overwrite / append standard output |
+| `<` | Redirect standard input |
+| `2>` | Redirect standard error |
+| `\|` | Pipe output to another command |
+| `;` | Run next command regardless of success |
+| `&&` | Run next command on success |
+| `\|\|` | Run next command on failure |
+| `!` | Negate exit status |
+| `xargs` | Convert input into command arguments |
+
+**Practice workflow:** Create files → inspect directories → search logs → redirect output → combine commands.
+'''
+
+output_path = Path("/mnt/data/linux-file-management-commands-summary.md")
+output_path.write_text(markdown, encoding="utf-8")
+print(f"Created: {output_path}")
