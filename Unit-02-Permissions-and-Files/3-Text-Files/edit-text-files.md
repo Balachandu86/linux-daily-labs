@@ -1,7 +1,3 @@
-from pathlib import Path
-
-markdown = r'''# Linux Text File Editing
-
 ## 1. `cat` — Display and Combine Files
 
 Display a file:
